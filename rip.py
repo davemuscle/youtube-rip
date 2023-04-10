@@ -18,9 +18,18 @@ class Ripper:
     THUMBNAIL = "thumbnail.png"
 
     # setup
-    def __init__ (self, URL, FMT):
-        self.url = URL
-        self.fmt = FMT
+    def __init__ (self,
+        url = "",
+        fmt = "",
+        artist = "",
+        album = "",
+        year = ""
+    ):
+        self.url = url
+        self.fmt = fmt
+        self.artist = artist
+        self.album = album
+        self.year = year
 
     # return future filename based off youtube url and format
     def get_file (self, url, fmt):
@@ -61,7 +70,10 @@ class Ripper:
             print("")
             print(comment['text'])
             print("")
-            print(f"Select comment as new chapters.txt? [(y)es / (e)dit / (n)o] ({idx+1}/{self.NUM_COMMENTS})")
+            print((
+                f"Select comment as new chapters.txt? "
+                f"[(y)es / (e)dit / (n)o] ({idx+1}/{self.NUM_COMMENTS})"
+            ))
             key = input()
             if(key == "y" or key == "e"):
                 with open (self.CHAPTER_FILE, "w") as f:
@@ -138,10 +150,13 @@ class Ripper:
                         }
                 chapters.append(chap)
 
-        duration = subprocess.check_output(
-            f"ffprobe -i \'{file}\' -v quiet -show_entries format=duration | grep duration | sed 's/.*=//'", 
-            shell=True
+        cmd = (
+            f"ffprobe -i \'{file}\' "
+             "-v quiet "
+             "-show_entries format=duration "
+             "| grep duration | sed 's/.*=//'"
         )
+        duration = subprocess.check_output(cmd, shell=True)
         duration = int(1000*float(duration.decode('utf-8')))
 
         text = ""
@@ -153,14 +168,30 @@ class Ripper:
                 end = duration
             else:
                 end = chapters[i+1]['startTime']-1
-            text += f"\n[CHAPTER]\nTIMEBASE=1/1000\nSTART={start}\nEND={end}\ntitle={title}\n"
+            text += (
+                f"\n[CHAPTER]"
+                f"\nTIMEBASE=1/1000"
+                f"\nSTART={start}"
+                f"\nEND={end}"
+                f"\ntitle={title}\n"
+            )
 
         os.system(f"rm -f {self.FFMETADATA}")
         os.system(f"ffmpeg -v quiet -i \'{file}\' -f ffmetadata {self.FFMETADATA}")
         with open(self.FFMETADATA, "a") as myfile:
             myfile.write(text)
         os.system(f"mv \'{file}\' .tmp.ffmpeg")
-        os.system(f"ffmpeg -v quiet -i .tmp.ffmpeg -i {self.FFMETADATA} -map_metadata 1 -codec copy \'{file}\'")
+        os.system((
+            f"ffmpeg -v quiet -i .tmp.ffmpeg -i {self.FFMETADATA} "
+            f"-map_metadata 1 "
+            f"-metadata author=\'{self.artist}\' "
+            f"-metadata artist=\'{self.artist}\' "
+            f"-metadata album_artist=\'{self.artist}\' "
+            f"-metadata album=\'{self.album}\' "
+            f"-metadata year=\'{self.year}\' "
+            f"-metadata date=\'{self.year}\' "
+            f"-codec copy \'{file}\'"
+        ))
         os.system(f"rm -f .tmp.ffmpeg")
 
     # split the source into the corresponding chapters
@@ -169,10 +200,25 @@ class Ripper:
             f"ffprobe -i \'{file}\' -v quiet -show_chapters -print_format json",
             shell = True
         ))
-        for chapter in file_json['chapters']:
-            print(f"Creating chapter for: {chapter['tags']['title']}")
-            os.system(f"ffmpeg -i \'{file}\' -v quiet -vcodec copy -acodec copy -ss {chapter['start_time']} -to {chapter['end_time']} \'{chapter['tags']['title']}.{self.fmt}\'")
-            os.system(f"mp4art --add {self.THUMBNAIL} \'{chapter['tags']['title']}.{self.fmt}\'")
+        top = len(file_json['chapters'])
+        for idx, chapter in enumerate(file_json['chapters']):
+            title = chapter['tags']['title']
+            print(f"Creating chapter for: {title}")
+            os.system((
+                f"ffmpeg -i \'{file}\' -v quiet "
+                f"-metadata author=\'{self.artist}\' "
+                f"-metadata artist=\'{self.artist}\' "
+                f"-metadata album_artist=\'{self.artist}\' "
+                f"-metadata album=\'{self.album}\' "
+                f"-metadata year=\'{self.year}\' "
+                f"-metadata date=\'{self.year}\' "
+                f"-metadata track=\"{idx+1}/{top}\" "
+                f"-metadata title=\"{title}\" "
+                f"-codec copy -ss {chapter['start_time']} -to {chapter['end_time']} "
+                f"\'{title}.{self.fmt}\'"
+            ))
+            if(self.fmt == "m4a"):
+                os.system(f"mp4art --add {self.THUMBNAIL} \'{title}.{self.fmt}\'")
 
     # top-level album ripper
     def rip(self):
@@ -189,13 +235,14 @@ class Ripper:
 
         # Determine if there are chapters
         if(self.check_for_chapters(self.file) == 0):
-            print(f"Source does not have chapters natively, cancel comment search? [(y)es / (n)o]")
+            print((
+                f"Source does not have chapters natively, run comment search? "
+                "[(y)es / (n)o] "
+            ))
             x = input()
-            if(x == "y"):
-                return 0
-            else:
+            if(x != "n"):
                 self.search_for_chapters(self.url)
-                self.embed_chapters(self.file)
+            self.embed_chapters(self.file)
 
         # Split album into parts
         self.split_chapters(self.file)
@@ -208,6 +255,19 @@ class Ripper:
 
 # ../rip.py 'https://www.youtube.com/watch?v=GkUL_oOOhMk' mp4
 if __name__ == "__main__":
-    x = Ripper(sys.argv[1], sys.argv[2])
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-u", "--url", action="store")
+    parser.add_argument("-f", "--format", action="store")
+    parser.add_argument("-a", "--artist", action="store")
+    parser.add_argument("-b", "--album", action="store")
+    parser.add_argument("-y", "--year", action="store")
+    args = parser.parse_args()
+    x = Ripper(
+        url = args.url,
+        fmt = args.format,
+        artist = args.artist,
+        album = args.album,
+        year = args.year
+    )
     x.rip()
-
