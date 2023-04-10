@@ -203,6 +203,10 @@ class Ripper:
         top = len(file_json['chapters'])
         for idx, chapter in enumerate(file_json['chapters']):
             title = chapter['tags']['title']
+            # peel off the number from a title like: "1. xyz"
+            tmp = re.match(r"^\s*\d+\.\s*(.*)", title)
+            if(tmp):
+                title = tmp.group(1)
             print(f"Creating chapter for: {title}")
             os.system((
                 f"ffmpeg -i \'{file}\' -v quiet "
