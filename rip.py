@@ -45,7 +45,7 @@ class Ripper:
             f"ffprobe -v quiet -i \'{file}\' -show_chapters",
             shell=True
         )
-        tmp.decode('utf-8').strip()
+        tmp = tmp.decode('utf-8').strip()
         if(tmp == ""):
             return 0
         else:
@@ -172,6 +172,7 @@ class Ripper:
         for chapter in file_json['chapters']:
             print(f"Creating chapter for: {chapter['tags']['title']}")
             os.system(f"ffmpeg -i \'{file}\' -v quiet -vcodec copy -acodec copy -ss {chapter['start_time']} -to {chapter['end_time']} \'{chapter['tags']['title']}.{self.fmt}\'")
+            os.system(f"mp4art --add {self.THUMBNAIL} \'{chapter['tags']['title']}.{self.fmt}\'")
 
     # top-level album ripper
     def rip(self):
@@ -187,7 +188,7 @@ class Ripper:
         os.system(f"ffmpeg -v quiet -i \'{self.file}\' -map 0:v -map -0:V -c copy {self.THUMBNAIL}")
 
         # Determine if there are chapters
-        if(self.check_for_chapters(self.file)):
+        if(self.check_for_chapters(self.file) == 0):
             print(f"Source does not have chapters natively, cancel comment search? [(y)es / (n)o]")
             x = input()
             if(x == "y"):
