@@ -3,6 +3,11 @@
 # edited from: https://ikyle.me/blog/2020/add-mp4-chapters-ffmpeg
 
 import re
+import sys
+import subprocess
+
+mp4 = sys.argv[1]
+txt = 'chapters.txt'
 
 def filter (line):
     # 00:00:00 chapter
@@ -40,7 +45,7 @@ def filter (line):
 
 chapters = list()
 
-with open('chapters.txt', 'r') as f:
+with open(txt, 'r') as f:
     for line in f:
         (hrs, mins, secs, title) = filter(line)
         minutes = (hrs * 60) + mins
@@ -54,11 +59,17 @@ with open('chapters.txt', 'r') as f:
 
 text = ""
 
-for i in range(len(chapters)-1):
+duration = subprocess.check_output(f"ffprobe -i \'{mp4}\' -v quiet -show_entries format=duration | grep duration | sed 's/.*=//'", shell=True)
+duration = int(1000*float(duration.decode('utf-8')))
+
+for i in range(len(chapters)):
     chap = chapters[i]
     title = chap['title']
     start = chap['startTime']
-    end = chapters[i+1]['startTime']-1
+    if(i == len(chapters)-1):
+        end = duration
+    else:
+        end = chapters[i+1]['startTime']-1
     text += f"""
 [CHAPTER]
 TIMEBASE=1/1000
