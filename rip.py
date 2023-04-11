@@ -27,7 +27,8 @@ class Ripper:
         artist = "",
         album = "",
         year = "",
-        keep = False
+        keep = False,
+        force_embed = False
     ):
         self.url = url
         self.fmt = fmt
@@ -35,7 +36,8 @@ class Ripper:
         self.album = album
         self.year = year
         self.outputdir = ""
-        self.keep = keep
+        self.keep = keep,
+        self.force_embed = force_embed
 
     # return future filename based off youtube url and format
     def get_file (self, url, fmt):
@@ -133,6 +135,7 @@ class Ripper:
             return (hrs, mins, secs, title)
         # chapter 00:00
         x = re.match(r"(.*)\s+(\d+):(\d+)", line)
+        print("here")
         if(x):
             title = x.group(1)
             hrs = 0
@@ -151,7 +154,7 @@ class Ripper:
                 seconds = secs + (minutes * 60)
                 timestamp = (seconds * 1000)
                 chap = {
-                        "title": string.capwords(title),
+                        "title": string.capwords(title.strip()),
                         "startTime": timestamp
                         }
                 chapters.append(chap)
@@ -227,6 +230,7 @@ class Ripper:
                 f"-codec copy -ss {chapter['start_time']} -to {chapter['end_time']} "
                 f"\"{title}\".{self.fmt}"
             )
+            print(cmd)
             os.system(cmd)
             if(self.fmt == "m4a"):
                 os.system(f"mp4art --add {self.THUMBNAIL} \"{title}\".{self.fmt}")
@@ -266,7 +270,7 @@ class Ripper:
         os.system(f"ffmpeg -v quiet -i \'{self.file}\' -map 0:v -map -0:V -c copy {self.THUMBNAIL}")
 
         # Determine if there are chapters
-        if(self.check_for_chapters(self.file) == 0):
+        if(self.force_embed or self.check_for_chapters(self.file) == 0):
             print((
                 f"Source does not have chapters natively, run comment search? "
                 "[(y)es / (n)o] "
@@ -294,6 +298,7 @@ if __name__ == "__main__":
     parser.add_argument("-b", "--album", action="store")
     parser.add_argument("-y", "--year", action="store")
     parser.add_argument("-k", "--keep", action="store_true")
+    parser.add_argument("-e", "--embed", action="store_true")
     args = parser.parse_args()
     x = Ripper(
         url = args.url,
@@ -301,7 +306,8 @@ if __name__ == "__main__":
         artist = args.artist,
         album = args.album,
         year = args.year,
-        keep = args.keep
+        keep = args.keep,
+        force_embed = args.embed
     )
     x.outputdir = OUTPUT_DIR
     x.rip()
