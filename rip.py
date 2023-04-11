@@ -230,7 +230,7 @@ class Ripper:
                 f"-codec copy -ss {chapter['start_time']} -to {chapter['end_time']} "
                 f"\"{title}\".{self.fmt}"
             )
-            print(cmd)
+            #print(cmd)
             os.system(cmd)
             if(self.fmt == "m4a"):
                 os.system(f"mp4art --add {self.THUMBNAIL} \"{title}\".{self.fmt}")
