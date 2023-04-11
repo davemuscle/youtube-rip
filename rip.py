@@ -279,8 +279,8 @@ class Ripper:
         # Split album into parts
         self.split_chapters(self.file)
 
-        #self.cleanup()
-        #self.export()
+        self.cleanup()
+        self.export()
 
         print("Done ripping, optionally, run 'easytag' now for manual cleanup")
 
