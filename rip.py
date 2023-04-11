@@ -8,6 +8,8 @@ import subprocess
 from itertools import islice
 from youtube_comment_downloader import *
 
+OUTPUT_DIR = "/home/dave/Music"
+
 class Ripper:
 
     # constants
@@ -23,13 +25,16 @@ class Ripper:
         fmt = "",
         artist = "",
         album = "",
-        year = ""
+        year = "",
+        keep = False
     ):
         self.url = url
         self.fmt = fmt
         self.artist = artist
         self.album = album
         self.year = year
+        self.outputdir = ""
+        self.keep = keep
 
     # return future filename based off youtube url and format
     def get_file (self, url, fmt):
@@ -255,7 +260,24 @@ class Ripper:
         with open (self.URL_FILE, "w") as f:
             f.write(f"{self.url}\n")
 
+        dir0 = self.outputdir + '/' + self.artist
+        dir1 = dir0 + '/' + self.album
+
+        # Remove source
+        if(not self.keep):
+            os.system(f"rm -f \'{self.file}\'")
+
+        # Remove metadata and chapters, keep the url
+        os.system(f"rm -f {self.CHAPTER_FILE}")
+        os.system(f"rm -f {self.FFMETADATA}")
+
+        # Export to directory
+        os.system(f"mkdir -p \'{dir0}\'")
+        os.system(f"mkdir -p \'{dir1}\'")
+        os.system(f"mv * \'{dir1}\'/")
+
         print("Done ripping, optionally, run 'easytag' now for manual cleanup")
+        print("Sent output to " + dir1)
 
 # ../rip.py 'https://www.youtube.com/watch?v=GkUL_oOOhMk' mp4
 if __name__ == "__main__":
@@ -266,12 +288,15 @@ if __name__ == "__main__":
     parser.add_argument("-a", "--artist", action="store")
     parser.add_argument("-b", "--album", action="store")
     parser.add_argument("-y", "--year", action="store")
+    parser.add_argument("-k", "--keep", action="store_true")
     args = parser.parse_args()
     x = Ripper(
         url = args.url,
         fmt = args.format,
         artist = args.artist,
         album = args.album,
-        year = args.year
+        year = args.year,
+        keep = args.keep
     )
+    x.outputdir = OUTPUT_DIR
     x.rip()
