@@ -5,6 +5,7 @@ import json
 import re
 import os
 import subprocess
+import string
 from itertools import islice
 from youtube_comment_downloader import *
 
@@ -150,7 +151,7 @@ class Ripper:
                 seconds = secs + (minutes * 60)
                 timestamp = (seconds * 1000)
                 chap = {
-                        "title": title.title(),
+                        "title": string.capwords(title),
                         "startTime": timestamp
                         }
                 chapters.append(chap)
@@ -213,7 +214,7 @@ class Ripper:
             if(tmp):
                 title = tmp.group(1)
             print(f"Creating chapter for: {title}")
-            os.system((
+            cmd = (
                 f"ffmpeg -i \'{file}\' -v quiet "
                 f"-metadata author=\'{self.artist}\' "
                 f"-metadata artist=\'{self.artist}\' "
@@ -224,10 +225,32 @@ class Ripper:
                 f"-metadata track=\"{idx+1}/{top}\" "
                 f"-metadata title=\"{title}\" "
                 f"-codec copy -ss {chapter['start_time']} -to {chapter['end_time']} "
-                f"\'{title}.{self.fmt}\'"
-            ))
+                f"\"{title}\".{self.fmt}"
+            )
+            os.system(cmd)
             if(self.fmt == "m4a"):
-                os.system(f"mp4art --add {self.THUMBNAIL} \'{title}.{self.fmt}\'")
+                os.system(f"mp4art --add {self.THUMBNAIL} \"{title}\".{self.fmt}")
+
+    def cleanup(self):
+        # Remove source
+        if(not self.keep):
+            os.system(f"rm -f \'{self.file}\'")
+
+        # Remove metadata and chapters, keep the url
+        os.system(f"rm -f {self.CHAPTER_FILE}")
+        os.system(f"rm -f {self.FFMETADATA}")
+
+    def export(self):
+        # Export url
+        with open (self.URL_FILE, "w") as f:
+            f.write(f"{self.url}\n")
+        dir0 = self.outputdir + '/' + self.artist
+        dir1 = dir0 + '/' + self.album
+        # Export to directory
+        os.system(f"mkdir -p \'{dir0}\'")
+        os.system(f"mkdir -p \'{dir1}\'")
+        os.system(f"mv * \'{dir1}\'/")
+        print("Sent output to " + dir1)
 
     # top-level album ripper
     def rip(self):
@@ -256,28 +279,10 @@ class Ripper:
         # Split album into parts
         self.split_chapters(self.file)
 
-        # Export url
-        with open (self.URL_FILE, "w") as f:
-            f.write(f"{self.url}\n")
-
-        dir0 = self.outputdir + '/' + self.artist
-        dir1 = dir0 + '/' + self.album
-
-        # Remove source
-        if(not self.keep):
-            os.system(f"rm -f \'{self.file}\'")
-
-        # Remove metadata and chapters, keep the url
-        os.system(f"rm -f {self.CHAPTER_FILE}")
-        os.system(f"rm -f {self.FFMETADATA}")
-
-        # Export to directory
-        os.system(f"mkdir -p \'{dir0}\'")
-        os.system(f"mkdir -p \'{dir1}\'")
-        os.system(f"mv * \'{dir1}\'/")
+        #self.cleanup()
+        #self.export()
 
         print("Done ripping, optionally, run 'easytag' now for manual cleanup")
-        print("Sent output to " + dir1)
 
 # ../rip.py 'https://www.youtube.com/watch?v=GkUL_oOOhMk' mp4
 if __name__ == "__main__":
