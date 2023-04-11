@@ -27,7 +27,7 @@ class Ripper:
         artist = "",
         album = "",
         year = "",
-        keep = False,
+        keep = 0,
         force_embed = False
     ):
         self.url = url
@@ -36,7 +36,7 @@ class Ripper:
         self.album = album
         self.year = year
         self.outputdir = ""
-        self.keep = keep,
+        self.keep = keep
         self.force_embed = force_embed
 
     # return future filename based off youtube url and format
@@ -241,8 +241,8 @@ class Ripper:
             os.system(f"rm -f \'{self.file}\'")
 
         # Remove metadata and chapters, keep the url
-        os.system(f"rm -f {self.CHAPTER_FILE}")
-        os.system(f"rm -f {self.FFMETADATA}")
+        os.system(f"mv {self.CHAPTER_FILE} ../.")
+        os.system(f"mv {self.FFMETADATA} ../.")
 
     def export(self):
         # Export url
@@ -271,6 +271,8 @@ class Ripper:
 
         # Determine if there are chapters
         if(self.force_embed or self.check_for_chapters(self.file) == 0):
+            # TODO: fix force embedding
+            # the metadata needs to be removed the mp4 before embedding
             print((
                 f"Source does not have chapters natively, run comment search? "
                 "[(y)es / (n)o] "
