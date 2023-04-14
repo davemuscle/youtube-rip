@@ -45,7 +45,9 @@ class Ripper:
             f'yt-dlp {url} --print filename -f {fmt}',
             shell=True
         )
-        return tmp.decode('utf-8').strip()
+        file = tmp.decode('utf-8').strip()
+        file = file.replace("'", "'\\\''")
+        return file
 
     # return the ID portion of the url
     def get_id (self, url):
@@ -67,6 +69,16 @@ class Ripper:
             return 0
         else:
             return 1
+
+    # kill existing metadata for chapters in the file
+    def remove_chapter_metadata (self, file):
+        os.system(f"mv \'{file}\' tmp") 
+        cmd = (
+            f"ffmpeg -v quiet -i tmp "
+            f"-codec copy -map_chapters -1 \'{file}\'"
+        )
+        os.system(cmd)
+        os.system("rm -f tmp")
 
     # download the comments from the video and parse through them
     # the user can choose to select a comment as-is, or select and
@@ -93,6 +105,8 @@ class Ripper:
     # regex filtering for the selected youtube comment, detects between
     # multiple formats of listing out the timestamps of songs
     def filter_chapter_line (self, line):
+        # kill quotes
+        line = line.replace('"', '')
         # 00:00:00 chapter
         x = re.match(r"(\d+):(\d+):(\d+)\s+(.*)", line)
         if(x):
@@ -186,6 +200,7 @@ class Ripper:
             )
 
         os.system(f"rm -f {self.FFMETADATA}")
+        self.remove_chapter_metadata(file)
         os.system(f"ffmpeg -v quiet -i \'{file}\' -f ffmetadata {self.FFMETADATA}")
         with open(self.FFMETADATA, "a") as myfile:
             myfile.write(text)
