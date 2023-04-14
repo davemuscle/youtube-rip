@@ -9,7 +9,7 @@ import string
 from itertools import islice
 from youtube_comment_downloader import *
 
-OUTPUT_DIR = "/home/dave/Music"
+OUTPUT_DIR = "/home/dave/Music/.inbin"
 
 class Ripper:
 
