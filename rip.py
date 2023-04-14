@@ -156,6 +156,9 @@ class Ripper:
             secs = int(x.group(3))
             return (hrs, mins, secs, title)
 
+    def go_caps(self, w):
+        return ' '.join([w.title() if w.islower() else w for w in w.split()])
+
     # place the searched chapters into the metadata of the original source
     # edited from: https://ikyle.me/blog/2020/add-mp4-chapters-ffmpeg
     def embed_chapters (self, file):
@@ -167,7 +170,7 @@ class Ripper:
                 seconds = secs + (minutes * 60)
                 timestamp = (seconds * 1000)
                 chap = {
-                        "title": string.capwords(title.strip()),
+                        "title": self.go_caps(title.strip()),
                         "startTime": timestamp
                         }
                 chapters.append(chap)
