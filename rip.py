@@ -149,7 +149,6 @@ class Ripper:
             return (hrs, mins, secs, title)
         # chapter 00:00
         x = re.match(r"(.*)\s+(\d+):(\d+)", line)
-        print("here")
         if(x):
             title = x.group(1)
             hrs = 0
