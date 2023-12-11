@@ -257,14 +257,15 @@ class Ripper:
         if(not self.keep):
             os.system(f"rm -f \'{self.file}\'")
 
+        os.system(f"rm -f {THUMBNAIL}")
         # Remove metadata and chapters, keep the url
         os.system(f"mv {self.CHAPTER_FILE} ../.")
         os.system(f"mv {self.FFMETADATA} ../.")
 
     def export(self):
         # Export url
-        with open (self.URL_FILE, "w") as f:
-            f.write(f"{self.url}\n")
+        #with open (self.URL_FILE, "w") as f:
+        #    f.write(f"{self.url}\n")
         dir0 = self.outputdir + '/' + self.artist
         dir1 = dir0 + '/' + self.album
         # Export to directory
